@@ -1,0 +1,36 @@
+:root {
+    --background: #1B1A23;
+    --btnNormal: #b5b1b1;
+    --btnHover: #ffffff; 
+}
+
+/* BG Stle */
+body {
+    background: var(--background);
+    min-width: 300px;
+    font: 400 16px "Poppins", sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Buttons */
+.raise {
+    background: none;
+    border: 2px solid;
+    font: inherit;
+    line-height: 1;
+    margin: 0.5em;
+    padding: 1em 2em;   
+}
+
+button {
+    color: var(--btnNormal);
+    transition: 0.25s;
+}
+button:hover, button:focus {
+    border-color: var(--btnHover);
+    color: var(--btnHover);
+}
+

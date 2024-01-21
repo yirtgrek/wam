@@ -1,0 +1,26 @@
+{
+"name": "WAM",
+"description": "Web Application Mapper",
+"version": "1.0",
+"manifest_version": 3,
+"permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "unlimitedStorage",
+    "webRequest",
+    "tabs",
+    "cookies",
+    "webNavigation"
+],
+"options_ui": {
+    "page": "wam/options.html",
+    "open_in_tab": true
+},
+"sandbox": {
+    "pages": ["wam/sandbox.html"]
+},
+"action": {
+    "default_popup": "popup.html"
+}
+}

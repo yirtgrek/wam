@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html class="sl-theme-dark">
+<head>
+    <title>WAM - Options</title>
+    <link rel="stylesheet" href="../css/dash.css"/>
+    <link rel="stylesheet" href="../dashboard.css"/>
+    <script type="module" src="../browser-polyfill.js"></script>
+</head>
+<body>
+    <section class="layout">
+        <div class="menu">
+            <div class="nav">
+                <div class="nav-right">
+                    <sl-select id="project-select" filled hoist placeholder="No Project Set" style="max-width: 300px;"></sl-select>
+                    <sl-drawer label="Details" id="details-drawer">
+                        <form id="detailsForm">
+                            <sl-input name="name" label="Name" id="detailsName" disabled></sl-input>
+                            <br />
+                            <sl-textarea name="scope" label="Scope" id="detailsScope"></sl-textarea>
+                            <br />
+                            <sl-textarea name="notes" label="Notes" id="detailsNotes"></sl-textarea>
+                            <br />
+                            <sl-button type="submit" slot="footer" id="saveDetailsBtn">Save</sl-button>
+                        </form>
+                        <sl-button slot="footer" variant="primary" id="closeDetailsBtn">Close</sl-button>
+                    </sl-drawer>
+                    <sl-button id="openDetailsBtn">Details</sl-button>
+                    <sl-dialog label="Dialog" id="new-project-dialog">
+                        <form id="newProjectForm">
+                            <sl-input name="name" label="Name" id="newProjectName"></sl-input>
+                            <br />
+                            <sl-textarea name="scope" label="Scope" id="newProjectScope"></sl-textarea>
+                            <br />
+                            <sl-textarea name="notes" label="Notes" id="newProjectNotes"></sl-textarea>
+                            <br />
+                            <sl-button type="submit" slot="footer" id="saveNewProjectBtn">Save</sl-button>
+                        </form>
+                        <sl-button slot="footer" variant="primary" id="closeNewProjectBtn">Close</sl-button>    
+                    </sl-dialog>
+                    <sl-button id="openNewProjectBtn">New Project</sl-button>
+                </div>
+            </div> 
+        </div>
+        <div class="map" id="graphContainer">
+            <sl-split-panel vertical style="height: 100%; --divider-width: 2px; --divider-hit-area: 20px;">
+                <div slot="start">
+                    <sl-split-panel style="height: 100%; --divider-width: 2px; --divider-hit-area: 40px;">
+                        <div
+                            slot="start"
+                            style="height: 100%; background: var(--sl-color-neutral-50); display: flex; align-items: center; justify-content: center; overflow: hidden"
+                        >
+                            <iframe id="theFrame" src="sandbox.html" scrolling="no" frameborder="0"></iframe>
+                        </div>
+                        <div
+                            id="left-panel"
+                            slot="end"
+                            style="height: 100%; background: var(--sl-color-neutral-50); display: flex; align-items: center; justify-content: center; overflow: hidden"
+                        >
+                            left
+                        </div>
+                    </sl-split-panel>
+                </div>
+                <div 
+                    id="bottom-panel"
+                    slot="end"
+                    style="height: auto; background: var(--sl-color-neutral-50); display: flex; align-items: center; justify-content: center; overflow: hidden"
+                >
+                    Bottom
+                </div>
+            </sl-split-panel>
+            
+        </div>
+    </section>
+    <script type="module" src="../dashboard.js"></script>
+</body>
+</html>
