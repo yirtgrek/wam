@@ -12,6 +12,7 @@ import { Project, addProject, getActiveProject, getProject, getProjectList, setA
 import { setActiveProjectDom, addProjectDom, updateDetailDrawerDom } from './dom'
 import { WebRequest } from 'webextension-polyfill'
 import { settings } from './settings'
+import { logBeforeRequest, logOnCompleted, logSendHeaders } from './listener'
 
 // Have to decalre shoelace stuff here in order to register it
 const split = SlSplitPanel
@@ -37,7 +38,7 @@ Promise.allSettled([
     customElements.whenDefined('sl-input'),
 ]).then( () => {
     document.body.classList.add('ready');
-});
+})
 
 // App state
 let active_project: Project | undefined = undefined;
@@ -230,6 +231,21 @@ newProjectForm.addEventListener("submit", async (ev) => {
 
 //
 // End New Project Dialog 
+//
+
+//
+// Request Listener
+//
+if (active_project != undefined) {
+    settings.browser.webRequest.onBeforeRequest.addListener( logBeforeRequest, active_project.scope, ['requestBody'])
+
+    settings.browser.webRequest.onSendHeaders.addListener( logSendHeaders, active_project.scope, ['requestHeaders'])
+    
+    settings.browser.webRequest.onCompleted.addListener( logOnCompleted, active_project.scope, ['responseHeaders'])
+}
+
+//
+// End Request Listener
 //
 
 if (active_project  != undefined) {

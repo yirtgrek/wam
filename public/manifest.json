@@ -10,9 +10,9 @@
     "unlimitedStorage",
     "webRequest",
     "tabs",
-    "cookies",
-    "webNavigation"
+    "cookies"
 ],
+"host_permissions": ["<all_urls>"],
 "options_ui": {
     "page": "wam/options.html",
     "open_in_tab": true

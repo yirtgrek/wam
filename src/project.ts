@@ -1,5 +1,6 @@
 import { WebRequest } from 'webextension-polyfill'
 import { settings } from './settings'
+import { v4 as uuidv4 } from 'uuid'
 
 // Gets a list of all saved projects
 //
@@ -122,5 +123,91 @@ export async function addProject(project: Project): Promise<boolean> {
     } catch (error) {
         console.error(`newProject: ${error}`)
         return false
+    }
+}
+
+export type Request = {
+    // A unique ID that is gernerated and used to get requests
+    id: string
+    // Page that request originated from
+    // This is also a page ID 
+    source?: string
+    // Page that was requested
+    // this is also a page ID
+    destination: string
+    // request method e.g. GET, POST
+    method: string
+    // Request IDs are unique within a browser session, they relate different events associated with the same request.
+    // This is only used when composing request-response pairs internally but for all other situations you should use id
+    requestId: string
+    // request Headers
+    requestHeaders?: WebRequest.HttpHeaders
+    // response Headers
+    responseHeaders?: WebRequest.HttpHeaders
+    // request body
+    body?: WebRequest.OnBeforeRequestDetailsTypeRequestBodyType
+    // The time when this event fired, in milliseconds since the epoch
+    timestamp: number
+    // The server IP address that the request was actually sent to. 
+    ip?: string
+    // Standard HTTP status code returned by the server
+    statusCode: number
+    // HTTP status line of the response or the 'HTTP/0.9 200 OK' string for HTTP/0.9 responses 
+    //(i.e., responses that lack a status line) or an empty string if there are no headers.
+    statusLine: string
+    // For http requests, the bytes transferred in the request.
+    requestSize: number
+    // For http requests, the bytes received in the request.
+    responseSize: number
+    // Type of requested resource e.g. "image", script
+    type: WebRequest.ResourceType
+}
+
+export function requestFromBeforeRequest(details: WebRequest.OnBeforeRequestDetailsType): Request {
+    let request: Request = {
+        id: uuidv4(),
+        source: details.documentUrl,
+        destination: details.url,
+        method: details.method,
+        requestId: details.requestId,
+        requestHeaders: undefined, // Headers we don't have yet
+        responseHeaders: undefined, // Headers we don't have yet
+        body: details.requestBody,
+        timestamp: details.timeStamp,
+        type: details.type,
+        statusCode: 0,
+        statusLine: '',
+        requestSize: 0,
+        responseSize: 0
+    }
+
+    return request
+}
+
+// Add a request that is still being processed
+// It is accessed by it's requestId
+//
+// Returns true if stored or false if error
+export async function addRequestBuilder(request: Request): Promise<boolean>  {
+    try {
+        await settings.browser.storage.local.set({[request.requestId]: request})
+        return true
+    } catch (error) {
+        console.error(`addRequestBuilder: ${error}`)
+        return false
+    }
+}
+
+// Get a request that is still being processed
+// It is accessed by it's requestId
+//
+// Returns the request or undefined if error
+export async function getRequestBuilder(requestId: string): Promise<Request | undefined>  {
+    try {
+        let request = await settings.browser.storage.local.get([requestId])
+        return request[requestId]
+    } catch (error) {
+        console.error(`getRequestBuilder: ${error}`)
+        return undefined
     }
 }
