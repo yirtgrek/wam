@@ -1,6 +1,7 @@
 import { WebRequest } from 'webextension-polyfill'
 import { settings } from './settings'
 import { v4 as uuidv4 } from 'uuid'
+import { addPagesToPanelDom } from './dom'
 
 // Gets a list of all saved projects
 //
@@ -35,7 +36,7 @@ export type Project = {
     scope: WebRequest.RequestFilter;
     // Web pages that a request was recorded from
     // Array of ids that can be used to look up the page information with getPage("page")
-    pages: Set<string>
+    pages: string[]
     // User added notes
     notes: string
 }
@@ -73,25 +74,21 @@ export async function getProject(project: string): Promise<Project | undefined> 
 
 // Updates the scope and notes of a project
 //
-// Returns the updated project or undefined if error
-export async function updateProject(project: Project): Promise<Project | undefined> {
+// Returns the true if successful or false
+export async function updateProject(project: Project): Promise<boolean> {
     try {
-        // get old project
-        const result: Record<string, Project | undefined> = await settings.browser.storage.local.get([project.name])
-        let old_project = result[project.name]
-        if (old_project == undefined) {
-            console.error(`updateProject: couldn't find ${project.name} in db`)
-            return undefined
-        }
-        // update the notes and scope
-        old_project.scope = project.scope
-        old_project.notes = project.notes
-        // save update
-        await settings.browser.storage.local.set({[project.name]: old_project})
-        return old_project
+        // Update project with lock
+        navigator.locks.request("project_update", async (lock) => {
+            const result: Record<string, Project | undefined> = await settings.browser.storage.local.get([project.name])
+            let old_project = result[project.name]
+            old_project!.scope = project.scope
+            old_project!.notes = project.notes
+            await settings.browser.storage.local.set({[project.name]: old_project})
+        })
+        return true
     } catch (error) {
         console.error(`updateProject: ${error}`)
-        return undefined
+        return false
     }
 }
 
@@ -161,6 +158,8 @@ export type Request = {
     responseSize: number
     // Type of requested resource e.g. "image", script
     type: WebRequest.ResourceType
+    // If user sent modified request
+    custom: boolean
 }
 
 export function requestFromBeforeRequest(details: WebRequest.OnBeforeRequestDetailsType): Request {
@@ -178,7 +177,8 @@ export function requestFromBeforeRequest(details: WebRequest.OnBeforeRequestDeta
         statusCode: 0,
         statusLine: '',
         requestSize: 0,
-        responseSize: 0
+        responseSize: 0,
+        custom: false
     }
 
     return request
@@ -210,4 +210,124 @@ export async function getRequestBuilder(requestId: string): Promise<Request | un
         console.error(`getRequestBuilder: ${error}`)
         return undefined
     }
+}
+
+// Add a request to the db by it's unique ID
+// This should be called after finished building request with request builder
+//
+// Returns true if stored or false if error
+export async function saveRequest(request: Request): Promise<boolean>  {
+    try {
+        await settings.browser.storage.local.set({[request.id]: request})
+        return true
+    } catch (error) {
+        console.error(`addRequestBuilder: ${error}`)
+        return false
+    }
+}
+
+export type Page = {
+    // The Url of the page. Serves as unique id to fetch the page
+    id: string
+    // Nickname of page set by user to appear on graph
+    nick: string
+    // Set of requests to or from the webpage
+    requests: string[]
+    // User added notes
+    notes: string
+}
+
+// Get a Page
+//
+// Returns the page or undefined if error
+export async function getPage(pageId: string): Promise<Page | undefined>  {
+    try {
+        let request = await settings.browser.storage.local.get([pageId])
+        return request[pageId]
+    } catch (error) {
+        console.error(`getRequestBuilder: ${error}`)
+        return undefined
+    }
+}
+
+// Add a new request to a page in a project
+// If the page doesn't exist it makes a new page record
+export async function addPage(pageId: string, requestId: string, project: string)  {
+    try {
+        // See if we have the page saved already
+        const record: Record<string, Page | undefined> = await settings.browser.storage.local.get([pageId])
+        let page = record[pageId]
+        // If we don't have it saved we make a new page and add to current project
+        // Also update the dom with the new page
+        if (page == undefined) {
+            // Update project with lock
+            navigator.locks.request("project_update", async (lock) => {
+                const result: Record<string, Project | undefined> = await settings.browser.storage.local.get([project])
+                let old_project = result[project]
+                old_project?.pages.push(pageId)
+                await settings.browser.storage.local.set({[project]: old_project})
+            })
+            
+            page = {
+                id: pageId,
+                nick: "",
+                requests: [requestId],
+                notes: ""
+            }
+            // Add page to db
+            await settings.browser.storage.local.set({[pageId]: page})
+            addPagesToPanelDom([page.id])
+        } else {
+            // Check if similar request already exists
+            let matches: number[] = []
+            // Get the index of all matched requests
+            page.requests.forEach(async (old_request, index) => {
+                const check = await compareRequests(requestId, old_request)
+                if (check == true) {
+                    matches.push(index)
+                }
+            })
+            // Delete old matches
+            matches.forEach( async (match, index) => {
+                // Remove old matches based on index collected earlier
+                const splice = page?.requests.splice(match - index, 1)
+                const removed = splice?.pop()
+                if (removed == undefined) {
+                    return
+                }
+                // Remove old request from db since don't need it anymore
+                await settings.browser.storage.local.remove([removed])
+            })
+            // Add our new request to page request list
+            page.requests.push(requestId)
+            // Add page to db
+            await settings.browser.storage.local.set({[pageId]: page})
+        }
+    } catch (error) {
+        console.error(`addPage: ${error}`)
+        return
+    }
+}
+
+
+// Compares two request to see if they are the same
+// true = same, false = different
+export async function compareRequests(request1Id: string, request2Id: string): Promise<boolean> {
+    const record1: Record<string, Request | undefined> = await settings.browser.storage.local.get([request1Id])
+    const record2: Record<string, Request | undefined> = await settings.browser.storage.local.get([request2Id])
+    const request1: Request | undefined = record1[request1Id]
+    const request2: Request | undefined= record2[request2Id]
+    if (request1 == undefined || request2 == undefined) {
+        return false
+    }
+
+    if (
+        request1.destination == request2.destination &&
+        request1.method == request2.method &&
+        request1.destination == request2.destination &&
+        request1.custom == false && request2.custom == false
+    ) {
+        return true
+    }
+    return false
 }

@@ -31,11 +31,9 @@ iframe {
   
     display: grid;
     grid:
-      "menu menu menu" auto
-      "map map map" 1fr
-      "info info info" auto
-      / auto 1fr auto;
-    gap: 8px;
+      "menu" 7vh
+      "map" 91vh
+      / auto;
 }
   
 .menu { 
@@ -65,4 +63,33 @@ iframe {
 }
 .nav > .nav-right > * {
     padding-right: 8px;
+}
+
+table {
+    table-layout: fixed;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th {
+	resize: horizontal;
+    white-space: nowrap;
+}
+  
+th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid hsl(240 5% 27.6%);
+    overflow: auto;
+}
+  
+tbody > tr:hover {
+    background-color: hsl(227.7 64.4% 42.9%);
+}
+
+th::-webkit-scrollbar {
+    display: none;
+}
+td::-webkit-scrollbar {
+    display: none;
 }

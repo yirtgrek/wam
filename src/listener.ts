@@ -1,5 +1,19 @@
 import { WebRequest, webRequest } from "webextension-polyfill";
-import { Request, addRequestBuilder, getRequestBuilder, requestFromBeforeRequest } from './project'
+import { Request, addPage, addRequestBuilder, getActiveProject, getRequestBuilder, requestFromBeforeRequest, saveRequest } from './project'
+import { settings } from "./settings";
+
+export function addListeners(scope: WebRequest.RequestFilter) {
+    settings.browser.webRequest.onBeforeRequest.addListener( logBeforeRequest, scope, ['requestBody'])
+    settings.browser.webRequest.onSendHeaders.addListener( logSendHeaders, scope, ['requestHeaders'])
+    settings.browser.webRequest.onCompleted.addListener( logOnCompleted, scope, ['responseHeaders'])
+}
+
+export function removeListeners() {
+    settings.browser.webRequest.onBeforeRequest.removeListener(logBeforeRequest)
+    settings.browser.webRequest.onSendHeaders.removeListener(logSendHeaders)
+    settings.browser.webRequest.onCompleted.removeListener(logOnCompleted)
+    
+}
 
 export function logBeforeRequest(details: WebRequest.OnBeforeRequestDetailsType) {   
     // Create the request
@@ -36,7 +50,15 @@ export async function logOnCompleted(details: WebRequest.OnCompletedDetailsType)
     request.statusLine = details.statusLine
     request.requestSize = details.requestSize
     request.responseSize = details.responseSize
-    // Save request
-    // Save updated request
-    await addRequestBuilder(request)
+    // Save Final request
+    await saveRequest(request)
+    // Save pages
+    const project = await getActiveProject()
+    if (project == undefined) {
+        return console.error("LogOnCompleted: Listener set but project isn't")
+    }
+    await addPage(request.destination, request.id, project.name)
+    if (request.source != undefined) {
+        await addPage(request.source, request.id, project.name)
+    }
 }
