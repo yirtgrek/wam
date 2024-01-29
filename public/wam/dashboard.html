@@ -16,7 +16,9 @@
                         <form id="detailsForm">
                             <sl-input name="name" label="Name" id="detailsName" disabled></sl-input>
                             <br />
-                            <sl-textarea name="scope" label="Scope" id="detailsScope"></sl-textarea>
+                            <sl-textarea name="scope" label="Scope" id="detailsScope">
+                                <div slot="help-text">Use <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#examples" target="_blank">Match Pattern</a> formatting.</div>
+                            </sl-textarea>
                             <br />
                             <sl-textarea name="notes" label="Notes" id="detailsNotes"></sl-textarea>
                             <br />
@@ -29,7 +31,9 @@
                         <form id="newProjectForm">
                             <sl-input name="name" label="Name" id="newProjectName"></sl-input>
                             <br />
-                            <sl-textarea name="scope" label="Scope" id="newProjectScope"></sl-textarea>
+                            <sl-textarea name="scope" label="Scope" id="newProjectScope">
+                                <div slot="help-text">Use <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#examples" target="_blank">Match Pattern</a> formatting.</div>
+                            </sl-textarea>
                             <br />
                             <sl-textarea name="notes" label="Notes" id="newProjectNotes"></sl-textarea>
                             <br />

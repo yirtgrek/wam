@@ -69,6 +69,15 @@ table {
     table-layout: fixed;
     border-collapse: collapse;
     width: 100%;
+    white-space: nowrap;
+}
+
+thead {
+    position: sticky;
+	position: -webkit-sticky;
+	top: 0px;
+	z-index: 2;
+    background-color: var(--sl-color-neutral-0);
 }
 
 th {
