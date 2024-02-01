@@ -9,7 +9,7 @@ import SlDialog from '@shoelace-style/shoelace/dist/components/dialog/dialog'
 import SlInput from '@shoelace-style/shoelace/dist/components/input/input'
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path'
 import { Project, addProject, getActiveProject, getPage, getProject, getProjectList, setActiveProject, updateProject } from './project'
-import { setActiveProjectDom, addProjectDom, updateDetailDrawerDom, setupProjectSelect, setupDetailDrawer, setupNewProjectDialog } from './dom'
+import { setActiveProjectDom, addProjectDom, updateDetailDrawerDom, setupProjectSelect, setupDetailDrawer, setupNewProjectDialog, setupTables } from './dom'
 import { WebRequest } from 'webextension-polyfill'
 import { settings } from './settings'
 import { addListeners, logBeforeRequest, logOnCompleted, logSendHeaders, removeListeners } from './listener'
@@ -47,12 +47,18 @@ setupProjectSelect()
 setupDetailDrawer()
 // Setup listeners for starting a new project
 setupNewProjectDialog()
+// Setup Page & Request Drawers
+setupTables()
 
 if (active_project != undefined) {
     // add listeners
     addListeners(active_project.scope)
     // Update dom
     setActiveProjectDom(active_project)  
+    // To get project to display on first render
+    //@ts-ignore
+    let projectSelect: SlSelect = document.getElementById("project-select")!
+    projectSelect.value = active_project.name.trim().replace(/\s+/g, "-")
 }
 
 document.body.classList.add('ready');

@@ -198,6 +198,19 @@ export async function addRequestBuilder(request: Request): Promise<boolean>  {
     }
 }
 
+// Get a request by it's uuid
+//
+// Returns the request or undefined if error
+export async function getRequest(id: string): Promise<Request | undefined>  {
+    try {
+        let request = await settings.browser.storage.local.get([id])
+        return request[id]
+    } catch (error) {
+        console.error(`getRequest: ${error}`)
+        return undefined
+    }
+}
+
 // Get a request that is still being processed
 // It is accessed by it's requestId
 //
@@ -254,55 +267,58 @@ export async function getPage(pageId: string): Promise<Page | undefined>  {
 // If the page doesn't exist it makes a new page record
 export async function addPage(pageId: string, requestId: string, project: string)  {
     try {
-        // See if we have the page saved already
-        const record: Record<string, Page | undefined> = await settings.browser.storage.local.get([pageId])
-        let page = record[pageId]
-        // If we don't have it saved we make a new page and add to current project
-        // Also update the dom with the new page
-        if (page == undefined) {
-            // Update project with lock
-            navigator.locks.request("project_update", async (lock) => {
-                const result: Record<string, Project | undefined> = await settings.browser.storage.local.get([project])
-                let old_project = result[project]
-                old_project?.pages.push(pageId)
-                await settings.browser.storage.local.set({[project]: old_project})
-            })
-            
-            page = {
-                id: pageId,
-                nick: "",
-                requests: [requestId],
-                notes: ""
+        // Use a lock on pageId to prevent issues when a new request is added at the same time
+        // a page details are updated by the user
+        navigator.locks.request(pageId, async (lock) => {
+            const record: Record<string, Page | undefined> = await settings.browser.storage.local.get([pageId])
+            let page = record[pageId]
+            // If we don't have it saved we make a new page and add to current project
+            // Also update the dom with the new page
+            if (page == undefined) {
+                // Update project with lock
+                navigator.locks.request("project_update", async (lock) => {
+                    const result: Record<string, Project | undefined> = await settings.browser.storage.local.get([project])
+                    let old_project = result[project]
+                    old_project?.pages.push(pageId)
+                    await settings.browser.storage.local.set({[project]: old_project})
+                })
+                
+                page = {
+                    id: pageId,
+                    nick: "",
+                    requests: [requestId],
+                    notes: ""
+                }
+                // Add page to db
+                await settings.browser.storage.local.set({[pageId]: page})
+                addPagesToPanelDom([page.id])
+            } else {
+                // Check if similar request already exists
+                let matches: number[] = []
+                // Get the index of all matched requests
+                page.requests.forEach(async (old_request, index) => {
+                    const check = await compareRequests(requestId, old_request)
+                    if (check == true) {
+                        matches.push(index)
+                    }
+                })
+                // Delete old matches
+                matches.forEach( async (match, index) => {
+                    // Remove old matches based on index collected earlier
+                    const splice = page?.requests.splice(match - index, 1)
+                    const removed = splice?.pop()
+                    if (removed == undefined) {
+                        return
+                    }
+                    // Remove old request from db since don't need it anymore
+                    await settings.browser.storage.local.remove([removed])
+                })
+                // Add our new request to page request list
+                page.requests.push(requestId)
+                // Add page to db
+                await settings.browser.storage.local.set({[pageId]: page})
             }
-            // Add page to db
-            await settings.browser.storage.local.set({[pageId]: page})
-            addPagesToPanelDom([page.id])
-        } else {
-            // Check if similar request already exists
-            let matches: number[] = []
-            // Get the index of all matched requests
-            page.requests.forEach(async (old_request, index) => {
-                const check = await compareRequests(requestId, old_request)
-                if (check == true) {
-                    matches.push(index)
-                }
-            })
-            // Delete old matches
-            matches.forEach( async (match, index) => {
-                // Remove old matches based on index collected earlier
-                const splice = page?.requests.splice(match - index, 1)
-                const removed = splice?.pop()
-                if (removed == undefined) {
-                    return
-                }
-                // Remove old request from db since don't need it anymore
-                await settings.browser.storage.local.remove([removed])
-            })
-            // Add our new request to page request list
-            page.requests.push(requestId)
-            // Add page to db
-            await settings.browser.storage.local.set({[pageId]: page})
-        }
+        })
     } catch (error) {
         console.error(`addPage: ${error}`)
         return
@@ -330,4 +346,24 @@ export async function compareRequests(request1Id: string, request2Id: string): P
         return true
     }
     return false
+}
+
+// Updates the nickname and notes of a Page
+//
+// Returns the true if successful or false
+export async function updatePageDetails(page: Page): Promise<boolean> {
+    try {
+        // Update project with lock
+        navigator.locks.request(page.id, async (lock) => {
+            const result: Record<string, Page | undefined> = await settings.browser.storage.local.get([page.id])
+            let old_page = result[page.id]
+            old_page!.nick = page.nick
+            old_page!.notes = page.notes
+            await settings.browser.storage.local.set({[page.id]: old_page})
+        })
+        return true
+    } catch (error) {
+        console.error(`updateProject: ${error}`)
+        return false
+    }
 }

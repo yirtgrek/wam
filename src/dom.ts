@@ -1,4 +1,4 @@
-import { Project, addProject, getActiveProject, getPage, getProject, getProjectList, setActiveProject, updateProject } from "./project";
+import { Page, Project, addProject, getActiveProject, getPage, getProject, getProjectList, getRequest, setActiveProject, updatePageDetails, updateProject } from "./project";
 import { settings } from "./settings";
 import { addListeners, removeListeners } from "./listener";
 
@@ -26,9 +26,40 @@ export function setActiveProjectDom(project: Project) {
     // clear any old content before setting new content
     pagesTableBody.textContent = ''
     addPagesToPanelDom(project.pages)
-    let bottomPanel = document.getElementById("bottom-panel") 
-    bottomPanel!.innerHTML = project.name
 }
+
+// Add pages to the left panel table
+// These supplied list is an id of the page you want to add
+export function addRequestsToPanelDom(requests: string[]) {
+    const requestTableBody = document.querySelector('#requestTableBody')!
+    requests.forEach(async (requestId) => {
+        let request = await getRequest(requestId)
+        if (request != undefined) {
+            // Make table row
+            let tr = document.createElement("tr")
+            tr.dataset.id = request.id
+            // Make td for name, id, page
+            let name = document.createElement("td")
+            name.innerHTML = request.destination
+            let status = document.createElement("td")
+            status.innerHTML = String(request.statusCode)
+            let type = document.createElement("td")
+            type.innerHTML = request.type
+            let method = document.createElement("td")
+            method.innerHTML = request.method
+            // Add td to tr then add the tr to the table body
+            tr.appendChild(name)
+            tr.appendChild(status)
+            tr.appendChild(type)
+            tr.appendChild(method)
+            tr.addEventListener("click", function handleClick(event) {
+                console.log(this.dataset.id)
+            })
+            requestTableBody.appendChild(tr)
+        }
+    })
+}
+
 // Add pages to the left panel table
 // These supplied list is an id of the page you want to add
 export function addPagesToPanelDom(pages: string[]) {
@@ -38,6 +69,7 @@ export function addPagesToPanelDom(pages: string[]) {
         if (page != undefined) {
             // Make table row
             let tr = document.createElement("tr")
+            tr.id = page.id
             tr.dataset.id = page.id
             // Make td for name, id, page
             let name = document.createElement("td")
@@ -50,12 +82,46 @@ export function addPagesToPanelDom(pages: string[]) {
             tr.appendChild(name)
             tr.appendChild(id)
             tr.appendChild(notes)
-            tr.addEventListener("click", function handleClick(event) {
+            tr.addEventListener("click", async function handleClick(event) {
                 console.log(this.dataset.id)
+                const requestTableBody = document.querySelector('#requestTableBody')!
+                // clear request from old pages
+                requestTableBody.textContent = ''
+                addRequestsToPanelDom(page!.requests)
+                // open side drawer with page details 
+                const pageDrawer: SlDrawer = document.querySelector('#pageDrawer')!
+                // Load new info
+                await updatePageDrawerDom(page!.id)
+                pageDrawer.open = !pageDrawer.open
             })
             pagesTableBody.appendChild(tr)
         }
     })
+}
+
+// Updates the info Page drawer to current the provided Page
+export async function updatePageDrawerDom(pageId: string) {
+    let page = await getPage(pageId)
+
+    //@ts-ignore
+    let name: SlInput = document.getElementById("pageName")!
+    //@ts-ignore
+    let url: SlInput = document.getElementById("pageUrl")!
+    //@ts-ignore
+    let notes: SlTextarea = document.getElementById("pageNotes")!
+
+    if (page == undefined) {
+        // error logged in get page request
+        // set values to error
+        name.value = "error"
+        url.value = "error"
+        notes.value = "error"
+        return
+    }
+
+    name.value = page.nick
+    url.value = page.id
+    notes.value = page.notes
 }
 
 
@@ -81,6 +147,57 @@ export function updateDetailDrawerDom(project: Project) {
     //@ts-ignore
     let notes: SlTextarea = document.getElementById("detailsNotes")!
     notes.value = project.notes
+}
+
+// Sets up the opening and closing of the table drawers
+export async function setupTables() {
+    // Setup close buttons
+    const pageDrawer: SlDrawer = document.querySelector('#pageDrawer')!
+    const closePageDrawerButton: SlButton = document.querySelector('#closePageDrawerBtn')!
+    closePageDrawerButton.addEventListener('click', () => pageDrawer.hide())
+
+    // Js for saving the updated page info when form submitted
+    const pageName: SlInput = document.querySelector('#pageName')!
+    const pageId: SlInput = document.querySelector('#pageUrl')!
+    const pageNotes: SlTextarea = document.querySelector('#pageNotes')!
+    const savePageDetailsBtn: SlButton = document.querySelector('#savePageDetailsBtn')!
+
+    savePageDetailsBtn.addEventListener("click", async (ev) => {
+        savePageDetailsBtn.loading = true
+        // Get project name
+        // This is a nick name the user can asign a page
+        const name = pageName.value
+        // The url which is also used as the page id
+        const id = pageId.value
+        const notes = pageNotes.value
+        // We add pages as a placeholder but the update function doesn't use it
+        let page: Page = {
+            id: id,
+            nick: name,
+            notes: notes,
+            requests: []
+        }
+        let update = await updatePageDetails(page)
+        if (update == false) {
+            // error happend return early
+            // the update function should log the error
+            return
+        }
+        // update table item with new saved info
+        updatePageTableItemDom(page)
+        savePageDetailsBtn.loading = false
+    })
+}
+
+function updatePageTableItemDom(page: Page) {
+    //@ts-ignore
+    let row: HTMLTableRowElement = document.getElementById(page.id)!
+    // Get the cells within the row 
+    let nameCell: HTMLTableCellElement = row.cells[0]
+    let notesCell: HTMLTableCellElement = row.cells[2]
+    // Update cells
+    nameCell.innerHTML = page.nick
+    notesCell.innerHTML = page.notes
 }
 
 // Sets the select project dropdown for the top menu
@@ -145,14 +262,12 @@ export async function setupDetailDrawer() {
     closeScopeButton.addEventListener('click', () => detailsDrawer.hide())
     
     // Js for saving the updated info when form submit
-    const detailsForm: HTMLFormElement = document.querySelector('#detailsForm')!
     const detailsName: SlInput = document.querySelector('#detailsName')!
     const detailsScope: SlTextarea = document.querySelector('#detailsScope')!
     const detailsNotes: SlTextarea = document.querySelector('#detailsNotes')!
     const saveDetailsBtn: SlButton = document.querySelector('#saveDetailsBtn')!
     
-    detailsForm.addEventListener("submit", async (ev) => {
-        ev.preventDefault()
+    saveDetailsBtn.addEventListener("click", async (ev) => {
         saveDetailsBtn.loading = true
         // Get project name
         // User can't change this since it's a unique id

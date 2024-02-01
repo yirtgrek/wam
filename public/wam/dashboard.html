@@ -37,8 +37,8 @@
                             <br />
                             <sl-textarea name="notes" label="Notes" id="newProjectNotes"></sl-textarea>
                             <br />
-                            <sl-button type="submit" slot="footer" id="saveNewProjectBtn">Save</sl-button>
                         </form>
+                        <sl-button type="submit" slot="footer" id="saveNewProjectBtn">Save</sl-button>
                         <sl-button slot="footer" variant="primary" id="closeNewProjectBtn">Close</sl-button>    
                     </sl-dialog>
                     <sl-button id="openNewProjectBtn">New Project</sl-button>
@@ -46,7 +46,7 @@
             </div> 
         </div>
         <div class="map" id="graphContainer">
-            <sl-split-panel vertical style="height: 100%; --divider-width: 2px; --divider-hit-area: 20px;">
+            <sl-split-panel vertical style="height: 100%; --divider-width: 2px; --divider-hit-area: 40px;">
                 <div slot="start">
                     <sl-split-panel style="height: 100%; --divider-width: 2px; --divider-hit-area: 40px;">
                         <div
@@ -58,31 +58,54 @@
                         <div
                             id="left-panel"
                             slot="end"
-                            style="height: 100%; background: var(--sl-color-neutral-50); display: flex; align-items: center; justify-content: center; overflow: hidden"
+                            style="height: 100%; background: var(--sl-color-neutral-50); display: flex; align-items: flex-start; justify-content: center; overflow: hidden; position: relative;"
                         >
                             <div style="height: 100%; width: 100%; overflow-x: auto;">
                                 <table id="pagesTable" >
                                     <thead>
                                     <tr>
-                                        <th>Page</th>
                                         <th>Name</th>
+                                        <th>Page</th>
                                         <th>Notes</th>
                                     </tr>
                                     </thead>
                                     <tbody id="pagesTableBody">
-                                        
                                     </tbody>
                                 </table>
                             </div>
+                            <sl-drawer label="Page" contained id="pageDrawer" style="--size: 90%;">
+                                <form id="pageForm">
+                                    <sl-input name="name" label="Name" id="pageName"></sl-input>
+                                    <br />
+                                    <sl-input name="name" label="Url" id="pageUrl" disabled></sl-input>
+                                    <br />
+                                    <sl-textarea name="notes" label="Notes" id="pageNotes"></sl-textarea>
+                                    <br />
+                                </form>
+                                <sl-button type="submit" slot="footer" id="savePageDetailsBtn">Save</sl-button>
+                                <sl-button slot="footer" variant="primary" id="closePageDrawerBtn">Close</sl-button>
+                            </sl-drawer>
                         </div>
                     </sl-split-panel>
                 </div>
                 <div 
                     id="bottom-panel"
                     slot="end"
-                    style="height: auto; background: var(--sl-color-neutral-50); display: flex; align-items: center; justify-content: center; overflow: hidden"
+                    style="height: auto; background: var(--sl-color-neutral-50); display: flex; align-items: flex-start; justify-content: center; overflow: hidden"
                 >
-                    Bottom
+                    <table id="requestTable" >
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Type</th>
+                            <th>Method</th>
+                        </tr>
+                        </thead>
+                        <tbody id="requestTableBody">
+                            
+                        </tbody>
+                    </table>
                 </div>
             </sl-split-panel>
             
