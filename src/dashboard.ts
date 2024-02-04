@@ -56,9 +56,10 @@ if (active_project != undefined) {
     // Update dom
     setActiveProjectDom(active_project)  
     // To get project to display on first render
+    // This is a workaround until shoelace/issues/1570 is resolved
     //@ts-ignore
     let projectSelect: SlSelect = document.getElementById("project-select")!
-    projectSelect.value = active_project.name.trim().replace(/\s+/g, "-")
+    projectSelect.placeholder = active_project.name
 }
 
 document.body.classList.add('ready');

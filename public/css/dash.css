@@ -12,6 +12,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
 }
 
 body.ready {
@@ -31,8 +32,8 @@ iframe {
   
     display: grid;
     grid:
-      "menu" 7vh
-      "map" 91vh
+      "menu" 53px
+      "map" calc(100vh - 53px)
       / auto;
 }
   
